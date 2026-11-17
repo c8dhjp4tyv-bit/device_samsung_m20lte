@@ -1,0 +1,73 @@
+M20 LineageOS 22.2 FBE testing (experimental)
+===========================================
+
+Crypto startup
+--------------
+Recovery's prop.default build processing disallows ro.product.first_api_level.
+init.recovery.crypto.rc sets it to 27 during early-init, before the version gate.
+The ROM/SPL gate still rejects mismatches; do not replace it with future dates.
+The recovery service runs m20lte-recovery-start, which waits for the checked gate,
+Mobicore readiness, registered KM3/GK1 HALs, and the keystore2 Binder service.
+The readiness probe performs service lookups only, never key operations.
+On failure/30-second timeout, recovery starts with of_skip_fbe_decryption=true
+instead of entering the unbounded DE-key Binder wait. Inspect the reason before
+retrying; do not bypass a version mismatch or delete any encryption files.
+Startup details are in /tmp/m20lte-crypto-startup.log in recovery RAM.
+
+Keep keystore2 enabled
+---------------------
+TeamWin android-12.1 system/vold/Keymaster.cpp connects to keystore2 even for DE
+keys. Its constructor uses AServiceManager_waitForService(), which explains the
+splash hang when the service is absent. No device flag selects a direct KM3 path.
+TeamWin android-12.1 system/security/keystore2/src/km_compat/km_compat.cpp explicitly
+falls back from Keymaster4 enumeration to Keymaster3. KM3 itself is supported.
+The recovery ramdisk needs /vendor/etc/vintf/manifest.xml, not just fragments.
+Without the base, libvintf returns null; keystore2/src/vintf/vintf.cpp dereferences
+that null in getHalNames()/getHidlInstances()/getAidlInstances(). A standalone
+ARM64 probe using the exact CI library reproduced SIGSEGV without the base and
+exited successfully with the base, listing keymaster, gatekeeper and health.
+The installed Android 15 vendor manifest is schema 9.0, also rejected by the
+Android 12 libvintf; the exact-library probe reproduced the same null crash with
+that manifest. This explains continued crash loops after Fox mounts real /vendor.
+The accompanying system/security patch makes all four FFI entry points return
+an allocated empty list on null manifests (not a null pointer, which is invalid
+for Rust's slice conversion even at length zero). KM3 fallback remains enabled.
+CI applies patches/keystore2-vintf-null-manifest.patch before compiling. For a
+manual source build, apply it from this tree to system/security with git apply
+before building; it is NOT applied automatically to any local ROM source tree.
+Actual phone boot and Android 15 credential decryption still require testing.
+Sources: https://github.com/TeamWin/android_system_security/tree/android-12.1
+         https://github.com/TeamWin/android_system_vold/tree/android-12.1
+No independently verified working A12/KM3 Exynos recovery was found in the
+reference-tree search; older android-9/11 trees do not establish an A12 workaround.
+
+Kernel choice
+-------------
+Keep the current prebuilt kernel and DT unchanged for the normal 4.4-supported
+recovery baseline. A /data filesystem written by the 5.10 port can have 36-byte
+F2FS extra inode attributes; the current Fox 4.4 parser allows only 24 bytes and
+rejects those inodes. This is not a PIN failure and cannot be fixed in the ramdisk.
+For that filesystem, test a separate 4.4 f2fscompat kernel variant with the same DT.
+The local m20-f2fs-extra-isize-compat patch accepts the newer extra attribute
+layout only for uncompressed inodes; it does not implement F2FS compression or
+make arbitrary newer filesystem features safe. Its changes are not upstreamed
+or validated for every device/filesystem combination. Switching the general
+prebuilt now would broaden an experimental filesystem backport to all users;
+keep it a separate test variant until it has appropriate regression coverage.
+
+Next test (only with separate approval for flashing)
+---------------------------------------------------
+1. Back up readable data and EFS off-device. Do not format, wipe or change PIN.
+2. Build the tree; verify the packaged base VINTF manifest, first-API init action,
+   crypto-ready binary and recovery-start wrapper. For 5.10-written userdata,
+   make a separate test image with the f2fscompat kernel, preserving the DT and
+   Samsung boot-image fields/trailer. Flash only RECOVERY through Samsung tooling.
+3. Expect first_api_level=27, checked=1, Mobicore/KM3/GK1 and keystore2 running,
+   crypto.ready=1, and of_skip_fbe_decryption=false without manual setprop/start.
+4. The startup log must report registered services BEFORE it launches recovery.
+   There should be no keystore2 signal-11 loop. Recovery should pass DE-key init
+   and show its UI. If readiness fails, expect a usable UI with FBE skipped and a
+   diagnostic startup log rather than a splash hang.
+5. Try the existing PIN; confirm actual internal-storage files are readable.
+   Reboot Android and confirm the unchanged PIN still unlocks and storage works.
+   Returning to a known-good recovery cannot undo an accidentally upgraded key.
