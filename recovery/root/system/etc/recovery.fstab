@@ -1,4 +1,4 @@
 # Android format: init reads this file for the bootloader message on reboot.
 # Recovery flags live in twrp.flags.
-/dev/block/platform/13500000.dwmmc0/by-name/USERDATA	/data	f2fs	noatime,nosuid,nodev,discard,usrquota,grpquota,fsync_mode=nobarrier,reserve_root=32768,resgid=5678	wait
+/dev/block/platform/13500000.dwmmc0/by-name/USERDATA	/data	f2fs	noatime,nosuid,nodev,discard,usrquota,grpquota,fsync_mode=nobarrier,reserve_root=32768,resgid=5678	wait,check,fileencryption=aes-256-xts,reservedsize=128M,quota
 /dev/block/platform/13500000.dwmmc0/by-name/MISC	/misc	emmc	defaults	defaults

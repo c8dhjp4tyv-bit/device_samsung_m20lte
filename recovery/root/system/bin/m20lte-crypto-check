@@ -1,0 +1,64 @@
+#!/system/bin/sh
+# Experimental, ROM-specific startup gate. This does not guarantee no key upgrade:
+# Keymaster and synthetic-password code can still update persistent state.
+# No formatting, wiping, lockscreen changes or key-file deletion belongs here.
+PATH=/system/bin:/sbin
+export PATH
+BLOCK=/dev/block/platform/13500000.dwmmc0/by-name
+SYS=/mnt/crypto-system
+VEN=/mnt/crypto-vendor
+sys_mounted=0
+ven_mounted=0
+cleanup() {
+    if [ "$sys_mounted" = 1 ]; then umount "$SYS"; fi
+    if [ "$ven_mounted" = 1 ]; then umount "$VEN"; fi
+}
+trap cleanup EXIT
+fail() {
+    setprop vendor.m20lte.crypto.error "$1"
+    exit 1
+}
+prop_file() {
+    # Build properties are data, never sourced as shell scripts.
+    sed -n "s/^$1=//p" "$2" | tr -d '\r'
+}
+setprop vendor.m20lte.crypto.checked 0
+[ "$(getprop ro.build.version.release)" = 15 ] || fail recovery_os_mismatch
+[ "$(getprop ro.build.version.security_patch)" = 2026-10-01 ] || fail recovery_spl_mismatch
+[ "$(getprop ro.vendor.build.security_patch)" = 2023-02-01 ] || fail recovery_vendor_spl_mismatch
+[ "$(getprop ro.product.first_api_level)" = 27 ] || fail recovery_first_api_mismatch
+[ "$(getprop ro.hardware.keystore)" = mdfpp ] || fail recovery_keystore_mismatch
+[ "$(getprop ro.hardware.gatekeeper)" = exynos7904 ] || fail recovery_gatekeeper_mismatch
+[ "$(cat /sys/fs/selinux/enforce)" = 0 ] || fail requires_permissive_recovery
+mkdir -p "$SYS" "$VEN" || fail cannot_make_mountpoints
+# noload avoids journal replay; do not mount over the ramdisk's minimal /vendor.
+mount -t ext4 -o ro,noload "$BLOCK/SYSTEM" "$SYS" || fail cannot_read_system
+sys_mounted=1
+mount -t ext4 -o ro,noload "$BLOCK/VENDOR" "$VEN" || fail cannot_read_vendor
+ven_mounted=1
+sysprop="$SYS/system/build.prop"
+[ -f "$sysprop" ] || sysprop="$SYS/build.prop"
+[ -f "$sysprop" ] || fail no_system_properties
+[ "$(prop_file 'ro\.build\.version\.release' "$sysprop")" = 15 ] || fail installed_os_mismatch
+[ "$(prop_file 'ro\.build\.version\.security_patch' "$sysprop")" = 2026-10-01 ] || fail installed_spl_mismatch
+[ "$(prop_file 'ro\.vendor\.build\.security_patch' "$VEN/build.prop")" = 2023-02-01 ] || fail installed_vendor_spl_mismatch
+[ "$(prop_file 'ro\.product\.first_api_level' "$VEN/build.prop")" = 27 ] || fail installed_first_api_mismatch
+# EFS holds device-specific TEE/gatekeeper state. Do not copy or initialize it.
+[ -c /dev/mobicore ] && [ -c /dev/mobicore-user ] || fail no_mobicore_devices
+mkdir -p /efs /mnt/vendor/efs || fail cannot_make_efs_mountpoints
+if ! grep -q ' /efs ' /proc/mounts; then
+    mount -t ext4 -o rw,nosuid,nodev "$BLOCK/EFS" /efs || fail cannot_mount_efs
+fi
+[ -d /efs/TEE ] || fail no_existing_tee_state
+if ! grep -q ' /mnt/vendor/efs ' /proc/mounts; then
+    mount -o bind /efs /mnt/vendor/efs || fail cannot_bind_efs
+fi
+# Native HIDL wrappers are relinked flat into /system/lib64 by TWRP.
+[ -f /system/lib64/android.hardware.keymaster@3.0-impl.so ] || fail no_keymaster_impl
+[ -f /system/lib64/android.hardware.gatekeeper@1.0-impl.so ] || fail no_gatekeeper_impl
+[ -f /system/lib64/libkeymaster3device.so ] || fail no_keymaster_wrapper
+cleanup
+sys_mounted=0
+ven_mounted=0
+setprop vendor.m20lte.crypto.error none
+setprop vendor.m20lte.crypto.checked 1

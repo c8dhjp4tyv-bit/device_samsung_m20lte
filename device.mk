@@ -16,6 +16,21 @@
 
 LOCAL_PATH := device/samsung/m20lte
 
+# Crypto HAL wrappers must be built with the recovery's Android 12 libraries.
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@3.0-service \
+    android.hardware.keymaster@3.0-impl \
+    libkeymaster3device \
+    android.hardware.gatekeeper@1.0-service \
+    android.hardware.gatekeeper@1.0-impl
+
+# Select the real legacy modules; do not silently fall back to software Keymaster.
+# ro.crypto.state/type are detected by recovery, not hard-coded here.
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.hardware.keystore=mdfpp \
+    ro.hardware.gatekeeper=exynos7904 \
+    ro.product.first_api_level=27
+
 # Fastbootd (disabled for physical eMMC partitions to save ~3.5MB ramdisk)
 TW_INCLUDE_FASTBOOTD := false
 

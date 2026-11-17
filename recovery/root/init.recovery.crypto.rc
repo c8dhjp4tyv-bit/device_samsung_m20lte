@@ -1,0 +1,64 @@
+# Experimental recovery-only crypto stack. Never import Android's full vendor init.
+# The existing device early-init action makes recovery permissive. Explicit labels
+# below use an existing domain, so missing Android vendor domains cannot block exec.
+# This is not a policy for an enforcing Android boot.
+# No lazy-service 'interface' stanzas: a client must not bypass the version gate.
+on post-fs
+    setprop vendor.sys.mobicoredaemon.enable stopped
+    wait /dev/mobicore 5
+    wait /dev/mobicore-user 5
+    chown system system /dev/mobicore
+    chmod 0700 /dev/mobicore
+    chown radio system /dev/mobicore-user
+    chmod 0666 /dev/mobicore-user
+    start m20lte-crypto-check
+
+# The daemon sets this property to "true" only after its TEE initialization.
+on property:vendor.m20lte.crypto.checked=1
+    start mobicore
+
+on property:vendor.sys.mobicoredaemon.enable=true && property:vendor.m20lte.crypto.checked=1
+    start vendor.keymaster-3-0
+    start vendor.gatekeeper-1-0
+
+on property:init.svc.mobicore=stopped
+    stop vendor.keymaster-3-0
+    stop vendor.gatekeeper-1-0
+
+service m20lte-crypto-check /system/bin/sh /system/bin/m20lte-crypto-check
+    class core
+    user root
+    group root system
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+# Stock init lists a fifth preload (...0001c.tlbin) absent from the vendor dump.
+# Do not pass a nonexistent file: retain the four preloads actually shipped.
+service mobicore /system/bin/mcDriverDaemon -r /vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000045.drbin
+    class core
+    user system
+    group system radio
+    disabled
+    setenv MC_AUTH_TOKEN_PATH /efs
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64
+    seclabel u:r:recovery:s0
+    onrestart setprop vendor.sys.mobicoredaemon.enable stopped
+    onrestart stop vendor.keymaster-3-0
+    onrestart stop vendor.gatekeeper-1-0
+
+service vendor.keymaster-3-0 /system/bin/android.hardware.keymaster@3.0-service
+    class core
+    user root
+    group root system drmrpc
+    disabled
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64
+    seclabel u:r:recovery:s0
+
+service vendor.gatekeeper-1-0 /system/bin/android.hardware.gatekeeper@1.0-service
+    class core
+    user system
+    group system
+    disabled
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64
+    seclabel u:r:recovery:s0

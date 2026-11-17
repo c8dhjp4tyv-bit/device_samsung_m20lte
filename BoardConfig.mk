@@ -96,21 +96,34 @@ LZMA_RAMDISK_TARGETS := recovery
 TARGET_RECOVERY_PIXEL_FORMAT := ABGR_8888
 RECOVERY_SDCARD_ON_DATA := true
 
-# Encryption
-PLATFORM_SECURITY_PATCH := 2127-12-31
-VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
-PLATFORM_VERSION := 99.87.36
+# Match the installed LineageOS 22.2 build before starting Keymaster.
+# Never use future version/patch values with real hardware-backed keys.
+PLATFORM_SECURITY_PATCH := 2026-10-01
+VENDOR_SECURITY_PATCH := 2023-02-01
+PLATFORM_VERSION := 15
 PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
 
 # Compression
 LZMA_RAMDISK_TARGETS := recovery
 BOARD_RAMDISK_USE_XZ := true
 
-# Crypto (LineageOS 22.2 on M20 uses FBE; decryption in recovery is not implemented here)
-TW_INCLUDE_CRYPTO := false
-TW_INCLUDE_CRYPTO_FBE := false
-AERA_INCLUDE_CRYPTO := false
-AERA_INCLUDE_CRYPTO_FBE := false
+# FBE: requires rebuilding recovery; adding blobs to a no-crypto image is insufficient.
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_USE_FSCRYPT_POLICY := 1
+# Build the generic helper, but /data does NOT use metadata encryption.
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
+AERA_INCLUDE_CRYPTO := true
+AERA_INCLUDE_CRYPTO_FBE := true
+
+# Build these against Fox's Android 12 runtime, not Android 15 output libraries.
+TW_RECOVERY_ADDITIONAL_RELINK_BINARY_FILES += \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/hw/android.hardware.keymaster@3.0-service \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/hw/android.hardware.gatekeeper@1.0-service
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
+    $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)/hw/android.hardware.keymaster@3.0-impl.so \
+    $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)/hw/android.hardware.gatekeeper@1.0-impl.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libkeymaster3device.so
 
 # TWRP & AERA build flags
 TW_THEME := portrait_hdpi

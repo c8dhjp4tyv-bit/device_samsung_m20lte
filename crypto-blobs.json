@@ -1,0 +1,90 @@
+{
+  "firmware": "M205FDDS9CWB2",
+  "target_runtime": "Fox 12.1 / Android 12",
+  "files": [
+    {
+      "source": "vendor/app/mcRegistry/08130000000000000000000000000000.tlbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/08130000000000000000000000000000.tlbin",
+      "source_sha256": "7d10c3e89362e16372a41fef5f134511948e37ddef31cdf144e7ad2d15e19a17",
+      "sha256": "7d10c3e89362e16372a41fef5f134511948e37ddef31cdf144e7ad2d15e19a17",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin",
+      "source_sha256": "77b25a157fc518ce76a9a4c782b3ff3e0129186ead50d44b80e499a8a8149ab4",
+      "sha256": "77b25a157fc518ce76a9a4c782b3ff3e0129186ead50d44b80e499a8a8149ab4",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/app/mcRegistry/ffffffff00000000000000000000003e.tlbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/ffffffff00000000000000000000003e.tlbin",
+      "source_sha256": "dc3c7f0300c7b3b27a775f76fc75be281122356644e5b16b54643444aa10f809",
+      "sha256": "dc3c7f0300c7b3b27a775f76fc75be281122356644e5b16b54643444aa10f809",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin",
+      "source_sha256": "3294b26dfa3714018da9dc299c63473665e3145ca372f75458eef14c4217dc13",
+      "sha256": "3294b26dfa3714018da9dc299c63473665e3145ca372f75458eef14c4217dc13",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin",
+      "source_sha256": "1dfb3d453c27e4ee72cceb30988b790dd68770579996615709940223b211bca9",
+      "sha256": "1dfb3d453c27e4ee72cceb30988b790dd68770579996615709940223b211bca9",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/app/mcRegistry/ffffffffd00000000000000000000045.drbin",
+      "destination": "recovery/root/vendor/app/mcRegistry/ffffffffd00000000000000000000045.drbin",
+      "source_sha256": "8c578c06ed43b7e6595056ddfe218d9136031416854e31afedb94ce07c30c177",
+      "sha256": "8c578c06ed43b7e6595056ddfe218d9136031416854e31afedb94ce07c30c177",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/bin/mcDriverDaemon",
+      "destination": "recovery/root/system/bin/mcDriverDaemon",
+      "source_sha256": "0e3661d34e8dab175a66aeb94d8752987b97aba3deaca7e80634b2d3682dedab",
+      "sha256": "0e3661d34e8dab175a66aeb94d8752987b97aba3deaca7e80634b2d3682dedab",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/lib64/hw/gatekeeper.exynos7904.so",
+      "destination": "recovery/root/vendor/lib64/hw/gatekeeper.exynos7904.so",
+      "source_sha256": "17e8f3a2013f826db80ec0e549ef75b8b767cfe5e0351df76429c890fc75938e",
+      "sha256": "17e8f3a2013f826db80ec0e549ef75b8b767cfe5e0351df76429c890fc75938e",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/lib64/hw/keystore.mdfpp.so",
+      "destination": "recovery/root/vendor/lib64/hw/keystore.mdfpp.so",
+      "source_sha256": "884015eb2e0d627b8b2a51ce98e82cce359a6cf93f76dddab221d358e33c34b9",
+      "sha256": "884015eb2e0d627b8b2a51ce98e82cce359a6cf93f76dddab221d358e33c34b9",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/lib64/libMcClient.so",
+      "destination": "recovery/root/vendor/lib64/libMcClient.so",
+      "source_sha256": "ce2d763a421c3a25185e4cecf01b5c4c2aa11cf4637ac17a61b15e4c80ad51d0",
+      "sha256": "ce2d763a421c3a25185e4cecf01b5c4c2aa11cf4637ac17a61b15e4c80ad51d0",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/lib64/libkeymaster2_mdfpp.so",
+      "destination": "recovery/root/vendor/lib64/libkeymaster2_mdfpp.so",
+      "source_sha256": "262b3fbd5727104576653e36eb9f0f7171094b266bd8e53458e6dc04b171dade",
+      "sha256": "262b3fbd5727104576653e36eb9f0f7171094b266bd8e53458e6dc04b171dade",
+      "removed_android15_shim_dependency": false
+    },
+    {
+      "source": "vendor/lib64/libkeymaster_helper_vendor.so",
+      "destination": "recovery/root/vendor/lib64/libkeymaster_helper_vendor.so",
+      "source_sha256": "5c2ec33036e32564d3b47c9d7fb7210b81ac65ae05679cbb4386d4021ad07315",
+      "sha256": "82a0a22333c7f3fba01a0568ea0201540e601d720a65369261bd1051203750a2",
+      "removed_android15_shim_dependency": true
+    }
+  ]
+}
