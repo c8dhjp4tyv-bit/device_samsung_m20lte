@@ -181,6 +181,13 @@ jobs:
           rsync -av --exclude=".git" --exclude=".github" device_repo/ "$SRC_DIR/device/samsung/m20lte/"
           ls -la "$SRC_DIR/device/samsung/m20lte"
 
+      - name: Guard keystore2 against missing or newer VINTF manifests
+        run: |
+          set -e
+          PATCH="$GITHUB_WORKSPACE/device_repo/patches/keystore2-vintf-null-manifest.patch"
+          git -C "$SRC_DIR/system/security" apply --check "$PATCH"
+          git -C "$SRC_DIR/system/security" apply "$PATCH"
+
       - name: Install LineageOS mkbootimg (for Samsung Exynos --dt support)
         run: |
           set -e
@@ -255,6 +262,11 @@ jobs:
           # A size-remediation retry must not turn a decrypt build into no-crypto.
           grep -qE '^TW_INCLUDE_CRYPTO[[:space:]]*:=[[:space:]]*true$' device/samsung/m20lte/BoardConfig.mk
           grep -qE '^TW_INCLUDE_CRYPTO_FBE[[:space:]]*:=[[:space:]]*true$' device/samsung/m20lte/BoardConfig.mk
+          RECOVERY_ROOT=out/target/product/m20lte/recovery/root
+          test -s "$RECOVERY_ROOT/vendor/etc/vintf/manifest.xml"
+          test -x "$RECOVERY_ROOT/system/bin/m20lte-crypto-ready"
+          test -x "$RECOVERY_ROOT/system/bin/m20lte-recovery-start"
+          grep -q 'setprop ro.product.first_api_level 27' "$RECOVERY_ROOT/init.recovery.crypto.rc"
 
       - name: Package Odin Tar & Checksums
         if: success()

@@ -1,0 +1,39 @@
+#!/system/bin/sh
+# Keep the init service's PID/socket, but delay recovery's DE-key initialization.
+# PID 1 remains free to run property actions and start HALs while this child waits.
+PATH=/system/bin:/sbin
+export PATH
+LOG=/tmp/m20lte-crypto-startup.log
+setprop vendor.m20lte.crypto.ready 0
+printf 'Waiting for checked ROM versions, Mobicore and registered crypto services\n' > "$LOG"
+read uptime ignored < /proc/uptime
+deadline=$(( ${uptime%%.*} + 30 ))
+ready=0
+while :; do
+    error=$(getprop vendor.m20lte.crypto.error)
+    case "$error" in
+        ''|none) ;;
+        *) printf 'Startup gate failed: %s\n' "$error" >> "$LOG"; break ;;
+    esac
+    if [ "$(getprop vendor.m20lte.crypto.checked)" = 1 ] &&
+       [ "$(getprop vendor.sys.mobicoredaemon.enable)" = true ]; then
+        if timeout 2 /system/bin/m20lte-crypto-ready >> "$LOG" 2>&1; then
+            ready=1
+            break
+        fi
+    fi
+    read uptime ignored < /proc/uptime
+    [ "${uptime%%.*}" -lt "$deadline" ] || break
+    sleep 1
+done
+if [ "$ready" = 1 ]; then
+    setprop vendor.m20lte.crypto.ready 1
+    setprop of_skip_fbe_decryption false
+    printf 'Crypto services registered; launching recovery\n' >> "$LOG"
+else
+    # Never let a failed gate or missing keystore2 strand the user at the splash.
+    # Fox checks this property before Decrypt_DE() and the unbounded Binder wait.
+    setprop of_skip_fbe_decryption true
+    printf 'Crypto not ready; launching recovery with FBE attempts disabled\n' >> "$LOG"
+fi
+exec /system/bin/recovery "$@"

@@ -1,8 +1,7 @@
-import /init.recovery.exynos7904.rc
+# init.rc already imports /init.recovery.${ro.hardware}.rc.
+# Do not import it twice: that duplicates the crypto startup actions.
 
-on boot
-
-# For starting recovery on 5.0 and newer
-service recovery /system/bin/recovery
+# Wait for real HAL registration and keystore2 before recovery initializes DE keys.
+service recovery /system/bin/sh /system/bin/m20lte-recovery-start
     socket recovery stream 422 system system
     seclabel u:r:recovery:s0

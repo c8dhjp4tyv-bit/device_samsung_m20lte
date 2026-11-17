@@ -3,7 +3,12 @@
 # below use an existing domain, so missing Android vendor domains cannot block exec.
 # This is not a policy for an enforcing Android boot.
 # No lazy-service 'interface' stanzas: a client must not bypass the version gate.
+# Recovery prop.default rejects this key; set it once before any crypto users.
+on early-init
+    setprop ro.product.first_api_level 27
+
 on post-fs
+    start hwservicemanager
     setprop vendor.sys.mobicoredaemon.enable stopped
     wait /dev/mobicore 5
     wait /dev/mobicore-user 5

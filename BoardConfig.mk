@@ -118,6 +118,7 @@ AERA_INCLUDE_CRYPTO_FBE := true
 
 # Build these against Fox's Android 12 runtime, not Android 15 output libraries.
 TW_RECOVERY_ADDITIONAL_RELINK_BINARY_FILES += \
+    $(TARGET_OUT_EXECUTABLES)/m20lte-crypto-ready \
     $(TARGET_OUT_VENDOR_EXECUTABLES)/hw/android.hardware.keymaster@3.0-service \
     $(TARGET_OUT_VENDOR_EXECUTABLES)/hw/android.hardware.gatekeeper@1.0-service
 TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
