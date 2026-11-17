@@ -203,8 +203,8 @@ class OpencodeAgent:
                 actions.append("Set BOARD_RAMDISK_USE_XZ := true")
 
             # Disable high-footprint modules
-            for var in ["TW_INCLUDE_CRYPTO", "TW_INCLUDE_CRYPTO_FBE", "AERA_INCLUDE_CRYPTO", "AERA_INCLUDE_CRYPTO_FBE",
-                        "TW_INCLUDE_NTFS_3G", "AERA_INCLUDE_NTFS_3G", "TW_INCLUDE_FUSE_NTFS", "AERA_INCLUDE_FUSE_NTFS",
+            # Crypto must not disappear silently from an overflowed decrypt build.
+            for var in ["TW_INCLUDE_NTFS_3G", "AERA_INCLUDE_NTFS_3G", "TW_INCLUDE_FUSE_NTFS", "AERA_INCLUDE_FUSE_NTFS",
                         "TWRP_INCLUDE_LOGCAT", "AERA_INCLUDE_LOGCAT", "TARGET_USES_LOGD"]:
                 pattern = rf"^[ \t]*{var}[ \t]*:=.*$"
                 if re.search(pattern, content, flags=re.MULTILINE):
