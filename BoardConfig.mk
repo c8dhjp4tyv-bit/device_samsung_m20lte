@@ -152,8 +152,8 @@ AERA_INCLUDE_FUSE_EXFAT := true
 TW_INCLUDE_FUSE_NTFS := false
 AERA_INCLUDE_FUSE_NTFS := false
 
-# Debug
-TWRP_INCLUDE_LOGCAT := false
-AERA_INCLUDE_LOGCAT := false
-TARGET_USES_LOGD := false
+# Recovery diagnostics: these are the flags consumed by Fox 12.1 Android.mk.
+TWRP_INCLUDE_LOGCAT := true
+AERA_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true
 

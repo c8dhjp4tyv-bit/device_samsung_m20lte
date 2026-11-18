@@ -181,12 +181,14 @@ jobs:
           rsync -av --exclude=".git" --exclude=".github" device_repo/ "$SRC_DIR/device/samsung/m20lte/"
           ls -la "$SRC_DIR/device/samsung/m20lte"
 
-      - name: Guard keystore2 against missing or newer VINTF manifests
+      - name: Apply recovery keystore2 patches
         run: |
           set -e
-          PATCH="$GITHUB_WORKSPACE/device_repo/patches/keystore2-vintf-null-manifest.patch"
-          git -C "$SRC_DIR/system/security" apply --check "$PATCH"
-          git -C "$SRC_DIR/system/security" apply "$PATCH"
+          for PATCH_NAME in keystore2-vintf-null-manifest.patch keystore2-km-compat-diagnostics.patch; do
+            PATCH="$GITHUB_WORKSPACE/device_repo/patches/$PATCH_NAME"
+            git -C "$SRC_DIR/system/security" apply --check "$PATCH"
+            git -C "$SRC_DIR/system/security" apply "$PATCH"
+          done
 
       - name: Install LineageOS mkbootimg (for Samsung Exynos --dt support)
         run: |
@@ -267,6 +269,12 @@ jobs:
           test -x "$RECOVERY_ROOT/system/bin/m20lte-crypto-ready"
           test -x "$RECOVERY_ROOT/system/bin/m20lte-recovery-start"
           grep -q 'setprop ro.product.first_api_level 27' "$RECOVERY_ROOT/init.recovery.crypto.rc"
+          grep -qE '^TWRP_INCLUDE_LOGCAT[[:space:]]*:=[[:space:]]*true$' device/samsung/m20lte/BoardConfig.mk
+          grep -qE '^TARGET_USES_LOGD[[:space:]]*:=[[:space:]]*true$' device/samsung/m20lte/BoardConfig.mk
+          test -x "$RECOVERY_ROOT/system/bin/logcat"
+          test -x "$RECOVERY_ROOT/system/bin/logd"
+          grep -q 'start logd' "$RECOVERY_ROOT/init.recovery.logd.rc"
+          grep -q 'service logd /system/bin/logd' "$RECOVERY_ROOT/init.recovery.logd.rc"
 
       - name: Package Odin Tar & Checksums
         if: success()

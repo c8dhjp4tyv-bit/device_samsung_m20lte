@@ -26,6 +26,15 @@ assert 'import /init.recovery.exynos7904.rc' not in service
 assert 'service recovery /system/bin/sh /system/bin/m20lte-recovery-start' in service
 assert '    interface ' not in rc
 print('PASS base manifest, early-init property and single device init import')
+board = (tree / 'BoardConfig.mk').read_text()
+assert 'TWRP_INCLUDE_LOGCAT := true' in board
+assert 'TARGET_USES_LOGD := true' in board
+assert not (root / 'init.recovery.logd.rc').exists(), 'empty override would mask generated logd rc'
+assert 'on late-init\n    start m20lte-crypto-logcat' in rc
+assert 'service m20lte-crypto-logcat /system/bin/logcat -b all' in rc
+assert '-f /tmp/m20lte-crypto-logcat.txt -r 2048 -n 2' in rc
+assert 'keystore2-km-compat-diagnostics.patch' in (tree / '.github/workflows/build.yml').read_text()
+print('PASS diagnostic flags, generated logd rc and bounded RAM log capture')
 
 for case in ['ready', 'gate_failure', 'not_registered']:
     d = fixtures / case

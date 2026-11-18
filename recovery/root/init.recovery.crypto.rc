@@ -6,6 +6,13 @@
 # Recovery prop.default rejects this key; set it once before any crypto users.
 on early-init
     setprop ro.product.first_api_level 27
+    export RUST_BACKTRACE 1
+    setprop log.tag.keystore2 VERBOSE
+
+# logd starts on init via Fox's generated /init.recovery.logd.rc. Capture its
+# buffers in RAM before keystore2 starts on late-init; never use encrypted /data.
+on late-init
+    start m20lte-crypto-logcat
 
 on post-fs
     start hwservicemanager
@@ -29,6 +36,13 @@ on property:vendor.sys.mobicoredaemon.enable=true && property:vendor.m20lte.cryp
 on property:init.svc.mobicore=stopped
     stop vendor.keymaster-3-0
     stop vendor.gatekeeper-1-0
+
+service m20lte-crypto-logcat /system/bin/logcat -b all -v threadtime -f /tmp/m20lte-crypto-logcat.txt -r 2048 -n 2
+    class core
+    user root
+    group root log readproc
+    disabled
+    seclabel u:r:recovery:s0
 
 service m20lte-crypto-check /system/bin/sh /system/bin/m20lte-crypto-check
     class core

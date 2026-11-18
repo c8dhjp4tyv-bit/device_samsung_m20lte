@@ -204,8 +204,8 @@ class OpencodeAgent:
 
             # Disable high-footprint modules
             # Crypto must not disappear silently from an overflowed decrypt build.
-            for var in ["TW_INCLUDE_NTFS_3G", "AERA_INCLUDE_NTFS_3G", "TW_INCLUDE_FUSE_NTFS", "AERA_INCLUDE_FUSE_NTFS",
-                        "TWRP_INCLUDE_LOGCAT", "AERA_INCLUDE_LOGCAT", "TARGET_USES_LOGD"]:
+            # Keep diagnostics too: a booting image without logs cannot debug FBE.
+            for var in ["TW_INCLUDE_NTFS_3G", "AERA_INCLUDE_NTFS_3G", "TW_INCLUDE_FUSE_NTFS", "AERA_INCLUDE_FUSE_NTFS"]:
                 pattern = rf"^[ \t]*{var}[ \t]*:=.*$"
                 if re.search(pattern, content, flags=re.MULTILINE):
                     content = re.sub(pattern, f"{var} := false", content, flags=re.MULTILINE)
