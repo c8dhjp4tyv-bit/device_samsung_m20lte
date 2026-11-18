@@ -55,6 +55,37 @@ or validated for every device/filesystem combination. Switching the general
 prebuilt now would broaden an experimental filesystem backport to all users;
 keep it a separate test variant until it has appropriate regression coverage.
 
+SIGABRT investigation and diagnostics
+------------------------------------
+The second phone test confirmed automatic launch API, successful gate and KM3/GK1
+registration, and no SIGSEGV. keystore2 instead aborts in a Binder worker. The
+saved dmesg does not contain the abort reason, so a specific CHECK/panic is not
+proven yet. Do not describe the remaining SIGABRT as fixed.
+The first abort (~8.5 s) precedes the first /data mount (~37.4 s), ruling out the
+later failed/ciphertext database copy as the cause of the initial abort. SQLite
+accepts an empty file as a new database; zero bytes alone do not prove corruption.
+Do not erase persistent Android databases or key files to investigate this.
+The optional KM4 default probe precedes KM3 fallback in both Android 12 and 15
+km_compat. Its missing-service message is not itself proof of an invalid KM3 HAL.
+Candidate native aborts include getHardwareFeatures transport CHECKs, missing
+mandatory declared services, or an invalid security level. Missing public
+android.security.* services may simply follow failure to construct the mandatory
+TEE security level before keystore2 registers its public services.
+
+Fox 12.1 uses TWRP_INCLUDE_LOGCAT and TARGET_USES_LOGD in Android.mk (required
+modules) and prebuilt/Android.mk (ramdisk binaries/libraries). The empty device
+init.recovery.logd.rc override is removed so Fox installs its real service, which
+starts logd on init. CI checks the installed service, binaries and flags and must
+not trim logging out on a recovery-size retry.
+A late-init service captures all logcat buffers to /tmp/m20lte-crypto-logcat.txt
+before keystore2 startup, with 2 MiB rotations and two backups. RUST_BACKTRACE is
+exported, but the existing custom Rust panic hook may still emit only panic text;
+this is not a promise of a native backtrace. No /data tombstone redirect is used.
+The km_compat diagnostic patch adds stage logs without changing fallback or
+relaxing any CHECK. It records optional HAL lookup completion, KM3 fallback, and
+hardware-feature query completion/version/security level. It never logs keys or
+credentials. CI applies it alongside the existing VINTF null-manifest patch.
+
 Next test (only with separate approval for flashing)
 ---------------------------------------------------
 1. Back up readable data and EFS off-device. Do not format, wipe or change PIN.
@@ -62,12 +93,17 @@ Next test (only with separate approval for flashing)
    crypto-ready binary and recovery-start wrapper. For 5.10-written userdata,
    make a separate test image with the f2fscompat kernel, preserving the DT and
    Samsung boot-image fields/trailer. Flash only RECOVERY through Samsung tooling.
-3. Expect first_api_level=27, checked=1, Mobicore/KM3/GK1 and keystore2 running,
+3. First verify init.svc.logd=running, init.svc.m20lte-crypto-logcat=running and
+   a growing /tmp/m20lte-crypto-logcat.txt. Preserve that file and its .1/.2
+   rotations, plus the startup log, dmesg and properties. Look for the actual
+   fatal CHECK/Rust panic and the last km_compat stage; do not infer it solely
+   from the optional KM4 lookup message.
+4. Expect first_api_level=27, checked=1, Mobicore/KM3/GK1 and keystore2 running,
    crypto.ready=1, and of_skip_fbe_decryption=false without manual setprop/start.
-4. The startup log must report registered services BEFORE it launches recovery.
+5. The startup log must report registered services BEFORE it launches recovery.
    There should be no keystore2 signal-11 loop. Recovery should pass DE-key init
    and show its UI. If readiness fails, expect a usable UI with FBE skipped and a
    diagnostic startup log rather than a splash hang.
-5. Try the existing PIN; confirm actual internal-storage files are readable.
+6. Try the existing PIN; confirm actual internal-storage files are readable.
    Reboot Android and confirm the unchanged PIN still unlocks and storage works.
    Returning to a known-good recovery cannot undo an accidentally upgraded key.
